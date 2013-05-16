@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file Mog services client module.
+ */
+
+/**
+ * Include services functions.
+ */
+module_load_include('inc', 'mog_services_client', 'includes/ServicesClientDao');
+
+/**
+ * Implements hook_menu().
+ */
+function mog_services_client_menu() {
+  $items['external-content'] = array(
+    'title' => 'External Content',
+    'page callback' => 'mog_services_client_get_content',
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Helper function to create content. It can be used in page or block.
+ * 
+ * @return
+ *   Generated content from external drupal.
+ */
+function mog_services_client_get_content() {
+  // Create our services client object.
+  $ServicesClientDao = new ServicesClientDao('rest');
+  $nodes_list = $ServicesClientDao->getNodes();
+  //kpr($nodes_list);
+  $content = '';
+  foreach ($nodes_list as $node_tmp) {
+    $remote_node = $ServicesClientDao->getNode($node_tmp['nid']);
+    //kpr($remote_node);
+    // Fill content however you like:
+    $content .= implode(
+      array(
+        '<h2>' . $remote_node['title'] . '</h2>',
+        $remote_node['body'][LANGUAGE_NONE][0]['value']
+      ), '<br />'
+    ) . '<hr />';
+  }
+  
+  return $content;
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function mog_services_client_ctools_plugin_api($owner, $api) {
+  if ($owner == 'services_client_connection' && $api == 'default_services_client_connection') {
+    return array('version' => 1);
+  }
+}
+
+/**
+ * Implements hook_services_client_connection_default_connections().
+ */
+function mog_services_client_services_client_connection_default_connections() {
+  $connection = new stdClass();
+  $connection->disabled = FALSE; /* Edit this to true to make a default connection disabled initially */
+  $connection->api_version = 1;
+  $connection->name = 'rest';
+  $connection->admin_title = 'rest';
+  $connection->admin_description = '';
+  $connection->version = 3;
+  $connection->endpoint = 'http://localhost/drupal_blog/rest';
+  $connection->config = array(
+    'auth' => array(
+      'plugin' => '',
+      'config' => array(),
+    ),
+    'server' => array(
+      'plugin' => 'ServicesClientConnectionRestServer',
+      'config' => array(
+        'request_formatter' => 'json',
+        'response_parser' => 'json',
+      ),
+    ),
+    'request' => array(
+      'plugin' => 'ServicesClientConnectionCurlRequest',
+      'config' => array(),
+    ),
+  );
+  $connection->debug = 0;
+
+  $connections['rest'] = $connection;
+
+  return $connections;
+}

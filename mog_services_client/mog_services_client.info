@@ -1,0 +1,5 @@
+name = MOG Services Client
+description = Module used for demonstration of services client.
+core = 7.x
+
+dependencies[] = services_client
